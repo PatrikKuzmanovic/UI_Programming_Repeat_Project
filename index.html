@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang = "en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width = device-width, initial-scale=1.0">
+        <meta name="description" content="Dungeon Game, name to be made">
+        <title>Dungeon Game</title>
+        <link rel="stylesheet" href="styles/style.css">
+    </head>
+    <body>
+        <div class="game-container">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div class="controls">
+                <button id="startBtn">Start Game</button>
+                <button id="pauseBtn">Pause</button>
+                <button id="restartBtn">Restart</button>
+                <form id="playerForm">
+                    <label for="playerName">Enter Your Name: </label>
+                    <input type="text" id="playerName" name="playerName" placeholder="Player Name">
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+        <script src="scripts/main.js"></script>
+    </body>
+</html>
