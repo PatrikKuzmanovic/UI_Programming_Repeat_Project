@@ -183,6 +183,18 @@ window.onload = function() {
             projectiles.forEach((projectile, index) => {
                 moveProjectile(projectile);
 
+                let collisionDetected = false;
+                obstacles.forEach(obstacle => {
+                    if (detectCollision(projectile, obstacle)) {
+                        collisionDetected = true;
+                    }
+                });
+
+                if (collisionDetected) {
+                    projectiles.splice(index, 1);
+                    return;
+                }
+
                 enemies.forEach((enemy, enemyIndex) => {
                     if (detectCollision(projectile, enemy)) {
                         enemy.health -= 1;
