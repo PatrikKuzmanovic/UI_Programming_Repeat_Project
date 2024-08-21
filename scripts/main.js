@@ -15,13 +15,41 @@ window.onload = function() {
         width: 50,
         height: 50,
         color: '#FF0000',
-        speed: 5
+        speed: 5,
+        health: 10
     };
 
     let moveUp = false;
     let moveDown = false;
     let moveLeft = false;
     let moveRight = false;
+
+    const enemies = [
+        {
+            x: 500,
+            y: 500,
+            width: 40,
+            height: 40,
+            speed: 2,
+            color: 'red',
+            direction: 'right',
+            health: 3
+        },
+    ];
+
+    function moveEnemy(enemy) {
+        if (enemy.direction === 'right') {
+            enemy.x += enemy.speed;
+            if (enemy.x + enemy.width > map.width) {
+                enemy.direction = 'left';
+            }
+        } else {
+            enemy.x -= enemy.speed;
+            if (enemy.x < 0) {
+                enemy.direction = 'right';
+            }
+        }
+    }
 
     const camera = {
         x: 0,
@@ -91,6 +119,27 @@ window.onload = function() {
             obstacles.forEach(obstacle => {
                 if (detectCollision(player, obstacle)) {
                     player.y = prevY;
+                }
+            });
+
+            enemies.forEach(enemy => {
+                moveEnemy(enemy);
+
+                if (detectCollision(player, enemy)) {
+                    player.health -= 1;
+                    console.log("Player hit! Health: " + player.health);
+                    if (player.health <= 0) {
+                        console.log("Game Over!");
+                        isGameRunning = false;
+                    }
+                }
+
+                if (enemy.x < camera.x + camera.width &&
+                    enemy.x + enemy.width > camera.x &&
+                    enemy.y < camera.y + camera.height &&
+                    enemy.y + enemy.health > camera.y) {
+                    ctx.fillStyle = enemy.color;
+                    ctx.fillRect(enemy.x - camera.x, enemy.y - camera.y, enemy.width, enemy.height);
                 }
             });
 
