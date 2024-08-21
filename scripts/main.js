@@ -16,7 +16,8 @@ window.onload = function() {
         height: 50,
         color: '#FF0000',
         speed: 5,
-        health: 10
+        health: 10,
+        direction: 'right'
     };
 
     let moveUp = false;
@@ -48,6 +49,32 @@ window.onload = function() {
             if (enemy.x < 0) {
                 enemy.direction = 'right';
             }
+        }
+    }
+
+    const projectiles = [];
+
+    function shootProjectile() {
+        const projectile = {
+            x: player.x + player.width / 2,
+            y: player.y + player.height / 2,
+            width: 5,
+            height: 5,
+            speed: 5,
+            direction: player.direction
+        };
+        projectiles.push(projectile);
+    }
+
+    function moveProjectile(projectile) {
+        if (projectile.direction === 'right') {
+            projectile.x += projectile.speed;
+        } else if (projectile.direction === 'left') {
+            projectile.x -= projectile.speed;
+        } else if (projectile.direction === 'up') {
+            projectile.y -= projectile.speed;
+        } else if (projectile.direction === 'down') {
+            projectile.y += projectile.speed;
         }
     }
 
@@ -153,6 +180,26 @@ window.onload = function() {
                     }
             });
 
+            projectiles.forEach((projectile, index) => {
+                moveProjectile(projectile);
+
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (detectCollision(projectile, enemy)) {
+                        enemy.health -= 1;
+                        console.log("Enemy hit! Health: " + enemy.health);
+                        projectiles.splice(index, 1);
+
+                        if (enemy.health <= 0) {
+                            console.log("Enemy defeated!");
+                            enemies.splice(enemyIndex, 1);
+                        }
+                    }
+                });
+
+                ctx.fillStyle = 'yellow';
+                ctx.fillRect(projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height);
+            });
+
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
 
@@ -181,15 +228,19 @@ window.onload = function() {
         switch(event.key){
             case 'ArrowUp':
                 moveUp = false;
+                player.direction = 'up';
                 break;
             case 'ArrowDown':
                 moveDown = false;
+                player.direction = 'down';
                 break;
             case 'ArrowLeft':
                 moveLeft = false;
+                player.direction = 'left';
                 break;
             case 'ArrowRight':
                 moveRight = false;
+                player.direction = 'right';
                 break;
         }
     });
@@ -210,4 +261,10 @@ window.onload = function() {
         player.y = 100;
         gameLoop();
     };
+
+    document.addEventListener('keydown', (event) => {
+        if (event.code === 'Space') {
+            shootProjectile();
+        }
+    });
 };
