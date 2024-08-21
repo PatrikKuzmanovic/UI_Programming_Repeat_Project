@@ -15,7 +15,7 @@ window.onload = function() {
         width: 50,
         height: 50,
         color: '#FF0000',
-        speed: 5,
+        speed: 2,
         health: 10,
         direction: 'right'
     };
@@ -25,29 +25,83 @@ window.onload = function() {
     let moveLeft = false;
     let moveRight = false;
 
+    const detectionRadius = 200;
+
     const enemies = [
         {
             x: 500,
             y: 500,
             width: 40,
             height: 40,
-            speed: 2,
+            speed: 1.5,
             color: 'red',
             direction: 'right',
-            health: 3
+            health: 3,
+            isAI: false
+        },
+        {
+            x: 700,
+            y: 700,
+            width: 40,
+            height: 40,
+            speed: 1.5,
+            color: 'blue',
+            direction: 'right',
+            health: 3,
+            isAI: true
         },
     ];
 
     function moveEnemy(enemy) {
-        if (enemy.direction === 'right') {
-            enemy.x += enemy.speed;
-            if (enemy.x + enemy.width > map.width) {
-                enemy.direction = 'left';
+        if (enemy.isAI) {
+            const distanceX = player.x - enemy.x;
+            const distanceY = player.y - enemy.y;
+            const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
+            if (distance < detectionRadius) {
+                const angle = Math.atan2(distanceY, distanceX);
+                const futureX = enemy.x + Math.cos(angle) * enemy.speed;
+                const futureY = enemy.y + Math.sin(angle) * enemy.speed;
+
+                const futureEnemy = {...enemy, x: futureX, y: futureY };
+                let collisionDetected = false;
+
+                obstacles.forEach(obstacle => {
+                    if (detectCollision(futureEnemy, obstacle)) {
+                        collisionDetected = true;
+                    }
+                });
+
+                if (!collisionDetected) {
+                    enemy.x = futureX;
+                    enemy.y = futureY;
+                } else {
+                    console.log("AI enemy collision detected with an obstacle!");
+                }
+            } else {
+                if (enemy.direction === 'right') {
+                    enemy.x += enemy.speed;
+                    if (enemy.x + enemy.width > map.width) {
+                        enemy.direction = 'left';
+                    }
+                } else {
+                    enemy.x -= enemy.speed;
+                    if (enemy.x < 0) {
+                        enemy.direction = 'right';
+                    }
+                }
             }
         } else {
-            enemy.x -= enemy.speed;
-            if (enemy.x < 0) {
-                enemy.direction = 'right';
+            if (enemy.direction === 'right') {
+                enemy.x += enemy.speed;
+                if (enemy.x + enemy.width > map.width) {
+                    enemy.direction = 'left';
+                }
+            } else {
+                enemy.x -= enemy.speed;
+                if (enemy.x < 0) {
+                    enemy.direction = 'right';
+                }
             }
         }
     }
