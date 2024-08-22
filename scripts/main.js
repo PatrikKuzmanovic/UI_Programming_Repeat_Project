@@ -17,7 +17,13 @@ window.onload = function() {
         color: '#FF0000',
         speed: 2,
         health: 10,
-        direction: 'right'
+        //direction: 'right'
+        maxHealth: 10,
+        stamina: 100,
+        maxStamina: 100,
+        canShoot: true,
+        bulletCount: 0,
+        maxBullets: 3,
     };
 
     let moveUp = false;
@@ -109,15 +115,35 @@ window.onload = function() {
     const projectiles = [];
 
     function shootProjectile() {
-        const projectile = {
-            x: player.x + player.width / 2,
-            y: player.y + player.height / 2,
-            width: 5,
-            height: 5,
-            speed: 5,
-            direction: player.direction
-        };
-        projectiles.push(projectile);
+        if (player.canShoot && player.bulletCount < player.maxBullets) {
+            const projectile = {
+                x: player.x + player.width / 2,
+                y: player.y + player.height / 2,
+                width: 5,
+                height: 5,
+                speed: 5,
+                direction: player.direction
+            };
+
+            if (projectile.direction === 'right') {
+                projectile.x += projectile.speed;
+            } else if (projectile.direction === 'left') {
+                projectile.x -= projectile.speed;
+            } else if (projectile.direction === 'up') {
+                projectile.y -= projectile.speed;
+            } else if (projectile.direction === 'down') {
+                projectile.y += projectile.speed;
+            }
+
+            projectiles.push(projectile);
+
+            player.bulletCount++;
+            reduceStamina(50);
+
+            if (player.bulletCount >= player.maxBullets) {
+                player.canShoot = false;
+            }
+        }
     }
 
     function moveProjectile(projectile) {
@@ -130,23 +156,6 @@ window.onload = function() {
         } else if (projectile.direction === 'down') {
             projectile.y += projectile.speed;
         }
-    }
-
-    const camera = {
-        x: 0,
-        y: 0,
-        width: canvas.width,
-        height: canvas.height
-    };
-
-    function updateCamera() {
-        camera.x = player.x - camera.width / 2;
-        camera.y = player.y - camera.height /2;
-
-        if (camera.x < 0) camera.x = 0;
-        if (camera.y < 0) camera.y = 0;
-        if (camera.x + camera.width > map.width) camera.x = map.width - camera.width;
-        if (camera.y + camera.height > map.height) camera.y = map.height - camera.height;
     }
 
     const obstacles = [
@@ -166,10 +175,78 @@ window.onload = function() {
         );
     }
 
+    const camera = {
+        x: 0,
+        y: 0,
+        width: canvas.width,
+        height: canvas.height
+    };
+
+    function updateCamera() {
+        camera.x = player.x - camera.width / 2;
+        camera.y = player.y - camera.height /2;
+
+        if (camera.x < 0) camera.x = 0;
+        if (camera.y < 0) camera.y = 0;
+        if (camera.x + camera.width > map.width) camera.x = map.width - camera.width;
+        if (camera.y + camera.height > map.height) camera.y = map.height - camera.height;
+    }
+    
+    function drawHealthBar() {
+        const barWidth = 200;
+        const barHeight = 20;
+        const healthPercentage = player.health / player.maxHealth;
+        const barX = 20;
+        const barY = 20;
+
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(barX, barY, barWidth, barHeight)
+
+        ctx.fillStyle = '#FF0000';
+        ctx.fillRect(barX, barY, barWidth * healthPercentage, barHeight);
+    }
+
+    function drawStaminaBar() {
+        const barWidth = 200;
+        const barHeight = 20;
+        const staminaPercentage = player.stamina / player.maxStamina;
+        const barX = 20;
+        const barY = 50;
+
+        ctx. fillStyle = '#000000';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+
+        ctx.fillStyle = '#FFFF00';
+        ctx.fillRect(barX, barY, barWidth * staminaPercentage, barHeight);
+    }
+
+    function reduceStamina(amount) {
+        player.stamina -= amount;
+        if (player.stamina < 0) player.stamina = 0;
+
+        if (player.bulletCount >= player.maxBullets) {
+            player.canShoot = false
+        }
+    }
+
+    function recoverStamina() {
+        if (!player.canShoot && player.stamina < player.maxStamina) {
+            player.stamina += player.maxStamina / (60 * 3);
+
+            if (player.stamina >= player.maxStamina) {
+                player.stamina = player.maxStamina;
+                player.bulletCount = 0;
+                player.canShoot = true;
+            }
+        }
+    }
+
     function gameLoop() {
         if (isGameRunning) {
 
             updateCamera();
+
+            recoverStamina();
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -269,6 +346,9 @@ window.onload = function() {
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
 
+            drawHealthBar();
+            drawStaminaBar();
+
             requestAnimationFrame(gameLoop);
         }
     }
@@ -316,7 +396,7 @@ window.onload = function() {
         gameLoop();
     };
 
-    document.getElementById('restartBtn').onclick = function() {
+    document.getElementById('pauseBtn').onclick = function() {
         isGameRunning = false;
         gameLoop();
     };
@@ -325,6 +405,11 @@ window.onload = function() {
         isGameRunning = false;
         player.x = 100;
         player.y = 100;
+        player.health = player.maxHealth;
+        player.stamina = player.maxStamina;
+        enemies.forEach(enemy => {
+            enemy.health = 3;
+        });
         gameLoop();
     };
 
