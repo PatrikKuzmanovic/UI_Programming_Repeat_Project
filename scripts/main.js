@@ -32,6 +32,7 @@ window.onload = function() {
     let moveRight = false;
     let isSprinting = false;
     let isInventoryVisible = false;
+    let isShieldActive = false;
     const sprintMultiplier = 3;
 
     const detectionRadius = 200;
@@ -147,6 +148,20 @@ window.onload = function() {
         }
     }
 
+    function activeShield() {
+        const shieldIndex = inventory.indexOf('shield(s)');
+        if (shieldIndex !== -1 && !isShieldActive) {
+            isShieldActive = true;
+            inventory.splice(shieldIndex, 1);
+
+            setTimeout(() =>{
+                isShieldActive = false;
+            }, 3000);
+        } else {
+            console.log("No shield available or is already active");
+        }
+    }
+
     const items = [
         {x: 600, y: 600, width: 30, height: 30, type: 'key', color: 'gold'},
         {x: 800, y: 500, width: 30, height: 30, type: 'potion(p)', color: 'purple'},
@@ -244,7 +259,7 @@ window.onload = function() {
         ctx.fillStyle = '#000000';
         ctx.fillRect(barX, barY, barWidth, barHeight)
 
-        ctx.fillStyle = '#FF0000';
+        ctx.fillStyle = isShieldActive ? '#0000FF' : '#FF0000';
         ctx.fillRect(barX, barY, barWidth * healthPercentage, barHeight);
     }
 
@@ -344,7 +359,7 @@ window.onload = function() {
             enemies.forEach(enemy => {
                 moveEnemy(enemy);
 
-                if (detectCollision(player, enemy)) {
+                if (!isShieldActive && detectCollision(player, enemy)) {
                     player.health -= 1;
                     console.log("Player hit! Health: " + player.health);
                     if (player.health <= 0) {
@@ -448,6 +463,9 @@ window.onload = function() {
                 break;
             case 'p':
                 restoreHealth(2);
+                break;
+            case 's':
+                activeShield();
                 break;
         }
     });
