@@ -31,6 +31,7 @@ window.onload = function() {
     let moveLeft = false;
     let moveRight = false;
     let isSprinting = false;
+    let isInventoryVisible = false;
     const sprintMultiplier = 3;
 
     const detectionRadius = 200;
@@ -126,17 +127,7 @@ window.onload = function() {
                 speed: 5,
                 direction: player.direction
             };
-
-            //if (projectile.direction === 'right') {
-                //projectile.x += projectile.speed;
-            //} else if (projectile.direction === 'left') {
-                //projectile.x -= projectile.speed;
-            //} else if (projectile.direction === 'up') {
-              //  projectile.y -= projectile.speed;
-            //} else if (projectile.direction === 'down') {
-              //  projectile.y += projectile.speed;
-            //}
-
+            
             projectiles.push(projectile);
 
             player.canShoot = false;
@@ -154,16 +145,44 @@ window.onload = function() {
         } else if (projectile.direction === 'down') {
             projectile.y += projectile.speed;
         }
+    }
 
-        //if (
-          //  projectile.x < 0 || projectile.x > map.width ||
-            //projectile.y < 0 || projectile.y > map.height
-        //) {
-          //  const index = projectiles.indexOf(projectile);
-            //if (index > -1) {
-              //  projectiles.splice(index, 1);
-            //}
-        //}
+    const items = [
+        {x: 600, y: 600, width: 30, height: 30, type: 'key', color: 'gold'},
+        {x: 800, y: 500, width: 30, height: 30, type: 'potion(p)', color: 'purple'},
+        {x: 1000, y: 800, width: 30, height: 30, type: 'shield(s)', color: 'blue'}
+    ];
+
+    const inventory = [];
+
+    function collectItem(itemIndex) {
+        const item = items[itemIndex];
+        inventory.push(item.type);
+        items.splice(itemIndex, 1);
+        console.log('Collected:', item.type);
+    }
+    
+    function checkItemCollection() {
+        items.forEach((item, index) => {
+            if (detectCollision(player, item)) {
+                collectItem(index);
+            }
+        });
+    }
+
+    function drawInventory() {
+        if (isInventoryVisible) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(10, 10, 300, 200);
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '16px Arial';
+            ctx.fillText('Inventory:', 20, 40);
+
+            inventory.forEach((item, index) => {
+                ctx.fillText(item, 20, 60 + index * 20);
+            });
+        }
     }
 
     const obstacles = [
@@ -300,6 +319,13 @@ window.onload = function() {
                 }
             });
 
+            checkItemCollection();
+
+            items.forEach(item => {
+                ctx.fillStyle = item.color;
+                ctx.fillRect(item.x - camera.x, item.y - camera.y, item.width, item.height);
+            });
+
             enemies.forEach(enemy => {
                 moveEnemy(enemy);
 
@@ -376,6 +402,7 @@ window.onload = function() {
 
             drawHealthBar();
             drawStaminaBar();
+            drawInventory();
 
             requestAnimationFrame(gameLoop);
         }
@@ -400,6 +427,10 @@ window.onload = function() {
                     isSprinting = true;
                 }
                 break;
+            case 'Tab':
+                isInventoryVisible = true;
+                event.preventDefault();
+                break;
         }
     });
 
@@ -423,6 +454,10 @@ window.onload = function() {
                 break;
             case 'Shift':
                 isSprinting = false;
+                break;
+            case 'Tab':
+                isInventoryVisible = false;
+                event.preventDefault();
                 break;
         }
     });
