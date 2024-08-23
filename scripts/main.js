@@ -30,6 +30,8 @@ window.onload = function() {
     let moveDown = false;
     let moveLeft = false;
     let moveRight = false;
+    let isSprinting = false;
+    const sprintMultiplier = 3;
 
     const detectionRadius = 200;
 
@@ -115,7 +117,7 @@ window.onload = function() {
     const projectiles = [];
 
     function shootProjectile() {
-        if (player.canShoot && player.bulletCount < player.maxBullets) {
+        if (player.canShoot && player.stamina === player.maxStamina) {
             const projectile = {
                 x: player.x + player.width / 2,
                 y: player.y + player.height / 2,
@@ -125,24 +127,20 @@ window.onload = function() {
                 direction: player.direction
             };
 
-            if (projectile.direction === 'right') {
-                projectile.x += projectile.speed;
-            } else if (projectile.direction === 'left') {
-                projectile.x -= projectile.speed;
-            } else if (projectile.direction === 'up') {
-                projectile.y -= projectile.speed;
-            } else if (projectile.direction === 'down') {
-                projectile.y += projectile.speed;
-            }
+            //if (projectile.direction === 'right') {
+                //projectile.x += projectile.speed;
+            //} else if (projectile.direction === 'left') {
+                //projectile.x -= projectile.speed;
+            //} else if (projectile.direction === 'up') {
+              //  projectile.y -= projectile.speed;
+            //} else if (projectile.direction === 'down') {
+              //  projectile.y += projectile.speed;
+            //}
 
             projectiles.push(projectile);
 
-            player.bulletCount++;
-            reduceStamina(50);
-
-            if (player.bulletCount >= player.maxBullets) {
-                player.canShoot = false;
-            }
+            player.canShoot = false;
+            reduceStamina(player.maxStamina / 2);
         }
     }
 
@@ -156,6 +154,16 @@ window.onload = function() {
         } else if (projectile.direction === 'down') {
             projectile.y += projectile.speed;
         }
+
+        //if (
+          //  projectile.x < 0 || projectile.x > map.width ||
+            //projectile.y < 0 || projectile.y > map.height
+        //) {
+          //  const index = projectiles.indexOf(projectile);
+            //if (index > -1) {
+              //  projectiles.splice(index, 1);
+            //}
+        //}
     }
 
     const obstacles = [
@@ -224,19 +232,30 @@ window.onload = function() {
         player.stamina -= amount;
         if (player.stamina < 0) player.stamina = 0;
 
-        if (player.bulletCount >= player.maxBullets) {
-            player.canShoot = false
+        if (player.stamina === 0) {
+            player.canShoot = false;
+            isSprinting = false;
+        }
+    }
+
+    function drainStaminaForSprint() {
+        if (isSprinting) {
+            reduceStamina(2);
+            if (player.stamina <= 0) {
+                player.stamina = 0;
+                isSprinting = false;
+            }
         }
     }
 
     function recoverStamina() {
-        if (!player.canShoot && player.stamina < player.maxStamina) {
+        if (player.stamina < player.maxStamina) {
             player.stamina += player.maxStamina / (60 * 3);
 
             if (player.stamina >= player.maxStamina) {
                 player.stamina = player.maxStamina;
-                player.bulletCount = 0;
                 player.canShoot = true;
+                //player.canSprint = true;
             }
         }
     }
@@ -246,6 +265,7 @@ window.onload = function() {
 
             updateCamera();
 
+            drainStaminaForSprint();
             recoverStamina();
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -256,10 +276,10 @@ window.onload = function() {
             let attemptedX = player.x;
             let attemptedY = player.y;
 
-            if (moveUp) attemptedY -= player.speed;
-            if (moveDown) attemptedY += player.speed;
-            if (moveLeft) attemptedX -= player.speed;
-            if (moveRight) attemptedX += player.speed
+            if (moveUp) attemptedY -= isSprinting ? player.speed * sprintMultiplier : player.speed;
+            if (moveDown) attemptedY += isSprinting ? player.speed * sprintMultiplier : player.speed;
+            if (moveLeft) attemptedX -= isSprinting ? player.speed * sprintMultiplier: player.speed;
+            if (moveRight) attemptedX += isSprinting ? player.speed * sprintMultiplier : player.speed;
 
             if (attemptedX < 0) attemptedX=0;
             if (attemptedX + player.width > map.width) attemptedX = map.width - player.width;
@@ -328,6 +348,7 @@ window.onload = function() {
 
                 enemies.forEach((enemy, enemyIndex) => {
                     if (detectCollision(projectile, enemy)) {
+                        collisionDetected = true;
                         enemy.health -= 1;
                         console.log("Enemy hit! Health: " + enemy.health);
                         projectiles.splice(index, 1);
@@ -338,6 +359,13 @@ window.onload = function() {
                         }
                     }
                 });
+
+                if (collisionDetected || 
+                    projectile.x < 0 || projectile.x > map.width ||
+                    projectile.y < 0 || projectile.y > map.height) {
+                    projectiles.splice(index, 1);
+                    }
+                
 
                 ctx.fillStyle = 'yellow';
                 ctx.fillRect(projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height);
@@ -367,6 +395,11 @@ window.onload = function() {
             case 'ArrowRight':
                 moveRight = true;
                 break;
+            case 'Shift':
+                if (player.stamina === player.maxStamina) {
+                    isSprinting = true;
+                }
+                break;
         }
     });
 
@@ -387,6 +420,9 @@ window.onload = function() {
             case 'ArrowRight':
                 moveRight = false;
                 player.direction = 'right';
+                break;
+            case 'Shift':
+                isSprinting = false;
                 break;
         }
     });
