@@ -218,6 +218,21 @@ window.onload = function() {
         if (camera.x + camera.width > map.width) camera.x = map.width - camera.width;
         if (camera.y + camera.height > map.height) camera.y = map.height - camera.height;
     }
+
+    function restoreHealth(amount) {
+        const potionIndex = inventory.indexOf('potion(p)');
+        if (potionIndex !== -1) {
+            player.health += amount;
+            if (player.health > player.maxHealth) {
+                player.health = player.maxHealth;
+            }
+            console.log("Potion used! Health restpred. Current Health: " + player.health);
+
+            inventory.splice(potionIndex, 1);
+        } else {
+            console.log("No potion available to use!");
+        }
+    }
     
     function drawHealthBar() {
         const barWidth = 200;
@@ -430,6 +445,9 @@ window.onload = function() {
             case 'Tab':
                 isInventoryVisible = true;
                 event.preventDefault();
+                break;
+            case 'p':
+                restoreHealth(2);
                 break;
         }
     });
