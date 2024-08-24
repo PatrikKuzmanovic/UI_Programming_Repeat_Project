@@ -35,6 +35,7 @@ window.onload = function() {
     let isShieldActive = false;
     const sprintMultiplier = 3;
 
+    let blueEnemyLastHitTime = 0;
     const detectionRadius = 200;
 
     const enemies = [
@@ -359,9 +360,32 @@ window.onload = function() {
             enemies.forEach(enemy => {
                 moveEnemy(enemy);
 
-                if (!isShieldActive && detectCollision(player, enemy)) {
-                    player.health -= 1;
-                    console.log("Player hit! Health: " + player.health);
+                if (enemy.isAI && !isShieldActive && detectCollision(player, enemy)) {
+                    const currentTime = Date.now();
+                    const timeSinceLastHit = currentTime - blueEnemyLastHitTime;
+
+                    if (timeSinceLastHit > 1000) {
+                        player.health -= 4;
+                        console.log("Player hit by blue AI enemy, Health: " + player.health);
+                        blueEnemyLastHitTime = currentTime;
+
+                        const knockbackStrength = 30;
+                        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                        player.x += Math.cos(angle) * knockbackStrength;
+                        player.y += Math.sin(angle) * knockbackStrength;
+
+                        if (player.x < 0) player.x = 0;
+                        if (player.x + player.width > map.width) player.x = map.width - player.width;
+                        if (player.y < 0) player.y = 0;
+                        if (player.y + player.health > map.height) player.y = map.height - player.height;
+
+                        obstacles.forEach(obstacle => {
+                            if (detectCollision(player, obstacle)) {
+                                player.x = prevX;
+                                player.y = prevY;
+                            }
+                        });
+                    }
                     if (player.health <= 0) {
                         console.log("Game Over!");
                         isGameRunning = false;
