@@ -149,6 +149,68 @@ window.onload = function() {
         }
     }
 
+    const enemyProjectiles = [];
+
+    function shootEnemyProjectile(enemy) {
+        const directions = ['up', 'down', 'left', 'right'];
+        const direction = directions[Math.floor(Math.random() * directions.length)];
+
+        const projectile = {
+            x: enemy.x + enemy.width / 2,
+            y: enemy.y + enemy.height / 2,
+            width: 5,
+            height: 5,
+            speed: 3,
+            direction: direction
+        };
+
+        enemyProjectiles.push(projectile);
+    }
+
+    function startEnemyShooting() {
+        setInterval(() => {
+            enemies.forEach(enemy => {
+                if (enemy.color === 'red') {
+                    shootEnemyProjectile(enemy);
+                }
+            });
+        }, 2000);
+    }
+
+    function moveEnemyProjectile(projectile) {
+        if (projectile.direction === 'right') {
+            projectile.x += projectile.speed;
+        } else if (projectile.direction === 'left') {
+            projectile.x -= projectile.speed;
+        } else if (projectile.direction === 'up') {
+            projectile.y -= projectile.speed;
+        } else if (projectile.direction === 'down') {
+            projectile.y += projectile.speed;
+        }
+
+        if (detectCollision(projectile, player)) {
+            if (!isShieldActive) {
+                player.health -= 6;
+                console.log("Player hit by enemy projectile, Health: " + player.health);
+
+                if (player.health <= 0) {
+                    console.log("Game Over");
+                    isGameRunning = false;
+                }
+            } else {
+                console.log("Enemy projectile blocked by shield");
+            }
+
+            return true;
+        }
+
+        if (projectile.x < 0 || projectile.x > map.width || projectile.y < 0 || projectile.y > map.height) {
+            return true;
+        }
+
+        return false;
+    }
+
     function activeShield() {
         const shieldIndex = inventory.indexOf('shield(s)');
         if (shieldIndex !== -1 && !isShieldActive) {
@@ -401,6 +463,16 @@ window.onload = function() {
                 }
             });
 
+            enemyProjectiles.forEach((projectile, index) => {
+                const shouldRemove = moveEnemyProjectile(projectile);
+                if (shouldRemove) {
+                    enemyProjectiles.splice(index, 1);
+                } else {
+                    ctx.fillStyle = 'purple';
+                    ctx.fillRect(projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height);
+                }
+            });
+
             ctx.fillStyle = '#654321';
             obstacles.forEach(obstacle => {
                 if (obstacle.x < camera.x + camera.width &&
@@ -524,6 +596,7 @@ window.onload = function() {
 
     document.getElementById('startBtn').onclick = function() {
         isGameRunning = true;
+        startEnemyShooting();
         gameLoop();
     };
 
