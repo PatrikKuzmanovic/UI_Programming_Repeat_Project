@@ -10,8 +10,8 @@ window.onload = function() {
     };
 
     const player = {
-        x: map.width / 2,
-        y: map.height / 2,
+        x: 100,
+        y: 100,
         width: 50,
         height: 50,
         color: '#FF0000',
@@ -41,7 +41,7 @@ window.onload = function() {
     const enemies = [
         {
             x: 500,
-            y: 500,
+            y: 400,
             width: 40,
             height: 40,
             speed: 1.5,
@@ -89,31 +89,59 @@ window.onload = function() {
                 } else {
                     console.log("AI enemy collision detected with an obstacle!");
                 }
-            } else {
-                if (enemy.direction === 'right') {
-                    enemy.x += enemy.speed;
-                    if (enemy.x + enemy.width > map.width) {
-                        enemy.direction = 'left';
-                    }
-                } else {
-                    enemy.x -= enemy.speed;
-                    if (enemy.x < 0) {
-                        enemy.direction = 'right';
-                    }
-                }
             }
-        } else {
+        }
+
+        const prevX = enemy.x;
+        const prevY = enemy.y;
+        
+        if (enemy.direction === 'right') {
+            enemy.x += enemy.speed;
+        } else if (enemy.direction === 'left') {
+            enemy.x -= enemy.speed;
+        } else if (enemy.direction === 'up') {
+            enemy.y -= enemy.speed;
+        } else if (enemy.direction === 'down') {
+            enemy.y += enemy.speed;
+        }
+
+        let collisionDetected = false;
+        obstacles.forEach(obstacle => {
+            if (detectCollision(enemy, obstacle)) {
+                collisionDetected = true;
+            }
+        });
+
+        if (collisionDetected) {
+            enemy.x = prevX;
+            enemy.y = prevY;
+
             if (enemy.direction === 'right') {
-                enemy.x += enemy.speed;
-                if (enemy.x + enemy.width > map.width) {
-                    enemy.direction = 'left';
-                }
-            } else {
-                enemy.x -= enemy.speed;
-                if (enemy.x < 0) {
-                    enemy.direction = 'right';
-                }
+                enemy.direction = 'left';
+            } else if (enemy.direction === 'left') {
+                enemy.direction = 'right';
+            } else if (enemy.direction === 'up') {
+                enemy.direction = 'down';
+            } else if (enemy.direction === 'down') {
+                enemy.direction = 'up';
             }
+        }
+
+        if (enemy.x + enemy.width > map.width) {
+            enemy.x = map.width - enemy.width;
+            enemy.direction = 'left';
+        }
+        if (enemy.x < 0) {
+            enemy.x = 0;
+            enemy.direction = 'right';
+        }
+        if (enemy.y + enemy.height > map.height) {
+            enemy.y = map.height - enemy.height;
+            enemy.direction = 'up';
+        }
+        if (enemy.y < 0) {
+            enemy.y = 0;
+            enemy.direction = 'down';
         }
     }
 
@@ -204,6 +232,17 @@ window.onload = function() {
             return true;
         }
 
+        let collisionDetected = false;
+        obstacles.forEach(obstacle => {
+            if (detectCollision(projectile, obstacle)) {
+                collisionDetected= true;
+            }
+        });
+
+        if (collisionDetected) {
+            return true;
+        }
+
         if (projectile.x < 0 || projectile.x > map.width || projectile.y < 0 || projectile.y > map.height) {
             return true;
         }
@@ -219,7 +258,7 @@ window.onload = function() {
 
             setTimeout(() =>{
                 isShieldActive = false;
-            }, 3000);
+            }, 10000);
         } else {
             console.log("No shield available or is already active");
         }
@@ -227,7 +266,7 @@ window.onload = function() {
 
     const items = [
         {x: 600, y: 600, width: 30, height: 30, type: 'key', color: 'gold'},
-        {x: 800, y: 500, width: 30, height: 30, type: 'potion(p)', color: 'purple'},
+        {x: 900, y: 500, width: 30, height: 30, type: 'potion(p)', color: 'purple'},
         {x: 1000, y: 800, width: 30, height: 30, type: 'shield(s)', color: 'blue'}
     ];
 
@@ -264,12 +303,30 @@ window.onload = function() {
     }
 
     const obstacles = [
-        {x: 300, y: 150, width: 100, height: 50 },
-        {x: 700, y: 400, width: 150, height: 75 },
-        {x: 1200, y: 800, width: 200, height: 100 },
-        {x: 1600, y: 1200, width: 100, height: 200},
-        {x: 500, y: 1500, width: 200, height: 50 }
+        {x: 0, y: 0, width: 2000, height: 50},
+        {x: 0, y: 1950, width: 2000, height: 50},
+        {x: 0, y: 0, width: 50, height: 2000},
+        {x: 1950, y: 0, width: 50, height: 2000},
+
+        {x: 300, y: 0, width: 50, height: 1500},
+        {x: 500, y: 500, width: 50, height: 1500},
+        {x: 800, y: 100, width: 50, height: 900},
+        {x: 1100, y: 1000, width: 50, height: 1000},
+        {x: 1500, y: 100, width: 50, height: 1400},
+        {x: 1700, y: 600, width: 50, height: 1400},
+
+        {x: 800, y: 400, width: 500, height: 50},
+        {x: 1200, y: 800, width: 500, height: 50},
+        {x: 1600, y: 1600, width: 300, height: 50},
     ];
+
+    const door = {x: 1780, y: 1780, width: 40, height: 40, color: 'brown'};
+
+    function checkDoorCollision() {
+        if (detectCollision(player, door)) {
+            console.log("Player reached the door!");
+        }
+    }
 
     function detectCollision(rect1, rect2) {
         return (
@@ -377,6 +434,7 @@ window.onload = function() {
 
             updateCamera();
 
+            checkDoorCollision();
             drainStaminaForSprint();
             recoverStamina();
 
@@ -525,6 +583,9 @@ window.onload = function() {
 
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
+
+            ctx.fillStyle = door.color;
+            ctx.fillRect(door.x - camera.x, door.y - camera.y, door.width, door.height);
 
             drawHealthBar();
             drawStaminaBar();
