@@ -36,30 +36,63 @@ window.onload = function() {
     const sprintMultiplier = 3;
 
     let blueEnemyLastHitTime = 0;
+
+    let enemyWidth = 48;
+    let enemyHeight = 64;
+    let enemyCurrentFrame = 0;
+    let soldierFrameCount = 0;
+    const maxEnemyFrames = 3;
+
+    const enemySprite = new Image();
+    enemySprite.src = 'assets/images/soldier.png';
+    const enemyFrames = {
+        up: [{sx: 0, sy: 0}, {sx: 48, sy: 0}, {sx: 96, sy: 0}],
+        right: [{sx: 0, sy: 64}, {sx: 48, sy: 64}, {sx: 96, sy: 64}],
+        down: [{sx: 0, sy: 128}, {sx: 48, sy: 128}, {sx: 96, sy: 128}],
+        left: [{sx: 0, sy: 192}, {sx: 48, sy: 192}, {sx: 96, sy: 192}],
+    };
+
+    let dragonWidth = 144;
+    let dragonHeight = 128;
+    let dragonCurrentFrame = 0;
+    let frameCount = 0;
+    const maxFramesPerDirection = 3;
+
+    const dragonSprite = new Image();
+    dragonSprite.src = 'assets/images/blueDragon.png';
+    const dragonFrames = {
+        up: [{sx: 0, sy: 0}, {sx: 144, sy: 0}, {sx: 288, sy: 0}],
+        right: [{sx: 0, sy: 128}, {sx: 144, sy: 128}, {sx: 288, sy: 128}],
+        down: [{sx: 0, sy: 256}, {sx: 144, sy: 256}, {sx: 288, sy: 256}],
+        left: [{sx: 0, sy: 384}, {sx: 144, sy: 384}, {sx: 288, sy: 384}],
+    };
+
     const detectionRadius = 200;
 
     const enemies = [
         {
             x: 500,
             y: 400,
-            width: 40,
-            height: 40,
+            width: enemyWidth,
+            height: enemyHeight,
             speed: 1.5,
-            color: 'red',
+            //color: 'red',
             direction: 'right',
             health: 3,
-            isAI: false
+            isAI: false,
+            isSoldier: true,
+            patrolDirection: 'horizontal',
         },
         {
-            x: 700,
-            y: 700,
-            width: 40,
-            height: 40,
+            x: 900,
+            y: 900,
+            width: dragonWidth,
+            height: dragonHeight,
             speed: 1.5,
-            color: 'blue',
             direction: 'right',
-            health: 3,
-            isAI: true
+            health: 7,
+            isAI: true,
+            isDragon: true
         },
     ];
 
@@ -124,6 +157,14 @@ window.onload = function() {
                 enemy.direction = 'down';
             } else if (enemy.direction === 'down') {
                 enemy.direction = 'up';
+            }
+        }
+
+        if (enemy.isSoldier) {
+            soldierFrameCount++;
+            if (soldierFrameCount >= 10) {
+                enemyCurrentFrame = (enemyCurrentFrame + 1) % maxEnemyFrames;
+                soldierFrameCount = 0;
             }
         }
 
@@ -198,7 +239,7 @@ window.onload = function() {
     function startEnemyShooting() {
         setInterval(() => {
             enemies.forEach(enemy => {
-                if (enemy.color === 'red') {
+                if (enemy.isSoldier) {
                     shootEnemyProjectile(enemy);
                 }
             });
@@ -258,7 +299,7 @@ window.onload = function() {
 
             setTimeout(() =>{
                 isShieldActive = false;
-            }, 10000);
+            }, 3000);
         } else {
             console.log("No shield available or is already active");
         }
@@ -516,8 +557,32 @@ window.onload = function() {
                     enemy.x + enemy.width > camera.x &&
                     enemy.y < camera.y + camera.height &&
                     enemy.y + enemy.health > camera.y) {
-                    ctx.fillStyle = enemy.color;
-                    ctx.fillRect(enemy.x - camera.x, enemy.y - camera.y, enemy.width, enemy.height);
+                    
+                    if (enemy.isDragon) {
+                        const frame = dragonFrames[enemy.direction][dragonCurrentFrame];
+
+                        ctx.drawImage(
+                            dragonSprite,
+                            frame.sx, frame.sy, dragonWidth, dragonHeight,
+                            enemy.x - camera.x, enemy.y - camera.y, enemy.width, enemy.height
+                        );
+                    } else if (enemy.isSoldier) {
+                        const frame = enemyFrames[enemy.direction][enemyCurrentFrame];
+                        
+                        ctx.drawImage(
+                            enemySprite,
+                            frame.sx, frame.sy, enemyWidth, enemyHeight,
+                            enemy.x - camera.x, enemy.y - camera.y, enemy.width, enemy.height
+                        );
+                    } else {
+                        ctx.fillStyle = enemy.color;
+                        ctx.fillRect(enemy.x - camera.x, enemy.y - camera.y, enemy.width, enemy.height);
+                    }
+                    frameCount++;
+                        if (frameCount >= 10) {
+                            dragonCurrentFrame = (dragonCurrentFrame + 1) % maxFramesPerDirection;
+                            frameCount = 0;
+                        }
                 }
             });
 
@@ -575,7 +640,6 @@ window.onload = function() {
                     projectile.y < 0 || projectile.y > map.height) {
                     projectiles.splice(index, 1);
                     }
-                
 
                 ctx.fillStyle = 'yellow';
                 ctx.fillRect(projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height);
