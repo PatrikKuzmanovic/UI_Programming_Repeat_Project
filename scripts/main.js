@@ -12,8 +12,8 @@ window.onload = function() {
     const player = {
         x: 100,
         y: 100,
-        width: 50,
-        height: 50,
+        width: 48,
+        height: 48,
         color: '#FF0000',
         speed: 2,
         health: 10,
@@ -291,6 +291,23 @@ window.onload = function() {
         return false;
     }
 
+    const wallImage = new Image();
+    wallImage.src = 'assets/images/wall2.jpg';
+
+    const walkwayImage = new Image();
+    walkwayImage.src = 'assets/images/walkway.jpg'
+
+    function drawWalkway() {
+        const pattern = ctx.createPattern(walkwayImage, 'repeat');
+        ctx.fillStyle = pattern;
+        //ctx.fillRect(0 - camera.x, 0 - camera.y, map.width, map.height);
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
+
+    const doorImage = new Image();
+    doorImage.src = 'assets/images/door.png';
+    const door = {x: 1745, y: 1585, width: 64, height: 96};
+
     function activeShield() {
         const shieldIndex = inventory.indexOf('shield(s)');
         if (shieldIndex !== -1 && !isShieldActive) {
@@ -361,7 +378,7 @@ window.onload = function() {
         {x: 1600, y: 1600, width: 300, height: 50},
     ];
 
-    const door = {x: 1780, y: 1780, width: 40, height: 40, color: 'brown'};
+    //const door = {x: 1780, y: 1780, width: 40, height: 40, color: 'brown'};
 
     function checkDoorCollision() {
         if (detectCollision(player, door)) {
@@ -481,6 +498,8 @@ window.onload = function() {
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            drawWalkway();
+
             const prevX = player.x;
             const prevY = player.y;
             
@@ -596,14 +615,17 @@ window.onload = function() {
                 }
             });
 
-            ctx.fillStyle = '#654321';
+            //ctx.fillStyle = '#654321';
             obstacles.forEach(obstacle => {
                 if (obstacle.x < camera.x + camera.width &&
                     obstacle.x + obstacle.width > camera.x &&
                     obstacle.y < camera.y + camera.height &&
                     obstacle.y + obstacle.height> camera.y){
+                    //ctx.fillRect(obstacle.x - camera.x, obstacle.y - camera.y, obstacle.width, obstacle.height);
+                    const pattern = ctx.createPattern(wallImage, 'repeat');
+                    ctx.fillStyle = pattern;
                     ctx.fillRect(obstacle.x - camera.x, obstacle.y - camera.y, obstacle.width, obstacle.height);
-                    }
+                }
             });
 
             projectiles.forEach((projectile, index) => {
@@ -648,9 +670,15 @@ window.onload = function() {
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
 
-            ctx.fillStyle = door.color;
-            ctx.fillRect(door.x - camera.x, door.y - camera.y, door.width, door.height);
-
+            //ctx.fillStyle = door.color;
+            //ctx.fillRect(door.x - camera.x, door.y - camera.y, door.width, door.height);
+            ctx.drawImage(
+                doorImage,
+                door.x - camera.x,
+                door.y - camera.y,
+                door.width,
+                door.height
+            );
             drawHealthBar();
             drawStaminaBar();
             drawInventory();
