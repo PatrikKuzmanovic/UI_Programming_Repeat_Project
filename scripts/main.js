@@ -3,6 +3,9 @@ window.onload = function() {
     const ctx = canvas.getContext("2d");
 
     let isGameRunning = false;
+    let keyDropMessage = '';
+    let messageTimer = 0;
+    const MESSAGE_DURATION = 3000;
 
     const map = {
         width: 2000,
@@ -304,6 +307,48 @@ window.onload = function() {
         ctx.fillRect(0, 0, canvas.width, canvas.height)
     }
 
+    const spikeImages = [];
+    for (let i = 1; i <= 4; i++) {
+        const img = new Image();
+        img.src = `assets/images/long_metal_spike_0${i}.png`;
+        spikeImages.push(img);
+    }
+
+    const spikeTrap = {
+        x: 600,
+        y: 600,
+        width: 50,
+        height: 50,
+        currentFrame: 0,
+        frameCount: 0,
+        maxFrames: spikeImages.length,
+        animationSpeed: 15
+    };
+    
+    function drawSpikeTrap() {
+        ctx.drawImage(spikeImages[spikeTrap.currentFrame], spikeTrap.x - camera.x, spikeTrap.y - camera.y, spikeTrap.width, spikeTrap.height);
+    }
+    
+    function updateSpikeTrap() {
+        spikeTrap.frameCount++;
+        if (spikeTrap.frameCount >= spikeTrap.animationSpeed) {
+            spikeTrap.currentFrame = (spikeTrap.currentFrame + 1) % spikeTrap.maxFrames;
+            spikeTrap.frameCount = 0;
+        }
+    }
+    
+    function checkSpikeCollision() {
+        if (detectCollision(player, spikeTrap)) {
+            player.health -= 5;
+            console.log("Player hit by spike trap, Health: " + player.health);
+            if (player.health <= 0) {
+                console.log("Game Over!");
+                isGameRunning = false;
+            }
+        }
+    }
+    
+
     const doorImage = new Image();
     doorImage.src = 'assets/images/door.png';
     const door = {x: 1745, y: 1585, width: 64, height: 96};
@@ -321,9 +366,15 @@ window.onload = function() {
             console.log("No shield available or is already active");
         }
     }
+    
+    function getRandomPosition() {
+        const x = Math.floor(Math.random() * (map.width - 30));
+        const y = Math.floor (Math.random() * (map.height - 30));
+        return { x, y };
+    }
 
     const items = [
-        {x: 600, y: 600, width: 30, height: 30, type: 'key', color: 'gold'},
+        {x: 500, y: 600, width: 30, height: 30, type: 'key', color: 'gold'},
         {x: 900, y: 500, width: 30, height: 30, type: 'potion(p)', color: 'purple'},
         {x: 1000, y: 800, width: 30, height: 30, type: 'shield(s)', color: 'blue'}
     ];
@@ -382,7 +433,12 @@ window.onload = function() {
 
     function checkDoorCollision() {
         if (detectCollision(player, door)) {
-            console.log("Player reached the door!");
+            if (inventory.includes('key')) {
+                console.log("Player reached the door!");
+            } else {
+                keyDropMessage = "You need a key to open the door";
+                messageTimer = MESSAGE_DURATION;
+            }
         }
     }
 
@@ -499,6 +555,8 @@ window.onload = function() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             drawWalkway();
+            updateSpikeTrap();
+            drawSpikeTrap();
 
             const prevX = player.x;
             const prevY = player.y;
@@ -531,6 +589,7 @@ window.onload = function() {
             });
 
             checkItemCollection();
+            checkSpikeCollision();
 
             items.forEach(item => {
                 ctx.fillStyle = item.color;
@@ -653,9 +712,31 @@ window.onload = function() {
                         if (enemy.health <= 0) {
                             console.log("Enemy defeated!");
                             enemies.splice(enemyIndex, 1);
+
+                            const keyPosition = getRandomPosition();
+                            items.push({
+                                x: keyPosition.x,
+                                y: keyPosition.y,
+                                width: 30,
+                                height: 30,
+                                type: 'key',
+                                color: 'gold'
+                            });
+
+                            console.log("Key dropped at: ", keyPosition);
+
+                            keyDropMessage = 'A key is Dropped somewhere!';
+                            messageTimer = MESSAGE_DURATION;
                         }
                     }
                 });
+
+                items.forEach(item => {
+                    if (item.type === 'key') {
+                        ctx.fillStyle = item.color;
+                        ctx.fillRect(item.x - camera.x, item.y - camera.y, item.width, item.height)
+                    };
+                })
 
                 if (collisionDetected || 
                     projectile.x < 0 || projectile.x > map.width ||
@@ -682,6 +763,18 @@ window.onload = function() {
             drawHealthBar();
             drawStaminaBar();
             drawInventory();
+
+            if (keyDropMessage) {
+                ctx.fillStyle = 'white';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'central';
+                ctx.fillText(keyDropMessage, canvas.width / 2, 30);
+
+                messageTimer -= 1000 / 60;
+                if (messageTimer <= 0) {
+                    keyDropMessage = '';
+                }
+            }
 
             requestAnimationFrame(gameLoop);
         }
