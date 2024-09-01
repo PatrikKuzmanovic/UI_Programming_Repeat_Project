@@ -590,6 +590,105 @@ window.onload = function() {
         if (camera.y + camera.height > map.height) camera.y = map.height - camera.height;
     }
 
+    function saveGame() {
+        const gameState = {
+            player: {
+                x: player.x,
+                y: player.y,
+                width: player.width,
+                height: player.height,
+                speed: player.speed,
+                health: player.health,
+                maxHealth: player.maxHealth,
+                stamina: player.stamina,
+                maxStamina: player.maxStamina,
+                canShoot: player.canShoot,
+                bulletCount: player.bulletCount,
+                maxBullets: player.maxBullets,
+                direction: player.direction
+            },
+            enemies: enemies.map(enemy => ({
+                x: enemy.x,
+                y: enemy.y,
+                width: enemy.width,
+                height: enemy.height,
+                speed: enemy.speed,
+                direction: enemy.direction,
+                health: enemy.health,
+                isAI: enemy.isAI,
+                isSoldier: enemy.isSoldier,
+                isDragon: enemy.isDragon,
+                patrolDirection: enemy.patrolDirection
+            })),
+            projectiles: projectiles.map(projectile => ({
+                x: projectile.x,
+                y: projectile.y,
+                width: projectile.width,
+                height: projectile.height,
+                speed: projectile.speed,
+                direction: projectile.direction,
+                frame: projectile.frame
+            })),
+            enemyProjectiles: enemyProjectiles.map(projectile => ({
+                x: projectile.x,
+                y: projectile.y,
+                width: projectile.y,
+                height: projectile.height,
+                speed: projectile.speed,
+                direction: projectile.direction
+            })),
+            items: items.map(item => ({
+                x: item.x,
+                y: item.y,
+                width: item.width,
+                height: item.height,
+                type: item.type,
+                color: item.color
+            })),
+            inventory: [...inventory],
+            isGameRunning: isGameRunning,
+            camera: {
+                x: camera.x,
+                y: camera.y
+            }
+        };
+
+        localStorage.setItem('gameState', JSON.stringify(gameState));
+        console.log('Game saved!');
+    }
+
+    function loadGame() {
+        const savedState = localStorage.getItem('gameState');
+        if (!savedState) {
+            console.log('No saved game Found');
+            return;
+        }
+
+        const gameState = JSON.parse(savedState);
+
+        Object.assign(player, gameState.player);
+
+        enemies.length = 0;
+        gameState.enemies.forEach(enemy => enemies.push(enemy));
+
+        projectiles.length = 0;
+        gameState.projectiles.forEach(projectile => projectiles.push(projectile));
+
+        enemyProjectiles.length = 0;
+        gameState.enemyProjectiles.forEach(projectile => enemyProjectiles.push(projectile));
+
+        items.length = 0;
+        gameState.items.forEach(item => items.push(item));
+
+        inventory.length = 0;
+        gameState.inventory.forEach(item => inventory.push(item));
+
+        isGameRunning = gameState.isGameRunning;
+        Object.assign(camera, gameState.camera);
+
+        console.log('Game loaded');
+    }
+
     function restoreHealth(amount) {
         const potionIndex = inventory.indexOf('potion(p)');
         if (potionIndex !== -1) {
@@ -959,6 +1058,9 @@ window.onload = function() {
         });
         gameLoop();
     };
+
+    document.getElementById('saveButton').addEventListener('click', saveGame);
+    document.getElementById('loadButton').addEventListener('click', loadGame);
 
     document.addEventListener('keydown', (event) => {
         if (event.code === 'Space') {
