@@ -426,6 +426,23 @@ window.onload = function() {
         });
     }
 
+    const gameOverImage = new Image();
+    gameOverImage.src = 'assets/images/gameOver.jpg';
+
+    gameOverImage.onload = function() {
+        console.log("Game Over image loaded successfully");
+        if (gameOver) {
+            drawGameOverScreen();
+        }
+    };
+
+    let gameOver = false;
+
+    function drawGameOverScreen() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(gameOverImage, (canvas.width - gameOverImage.width) / 2, (canvas.height - gameOverImage.height) / 2);
+    }
+
     const wallImage = new Image();
     wallImage.src = 'assets/images/wall2.jpg';
 
@@ -479,7 +496,6 @@ window.onload = function() {
         }
     }
     
-
     const doorImage = new Image();
     doorImage.src = 'assets/images/door.png';
     const door = {x: 1400, y: 1585, width: 64, height: 96};
@@ -805,6 +821,15 @@ window.onload = function() {
                 return;
             }
 
+            if (player.health <= 0) {
+                gameOver = true;
+                if (gameOverImage.complete) {
+                    drawGameOverScreen();
+                }
+                isGameRunning = false;
+                return;
+            }
+
             updateCamera();
             updatePlayerMovement();
             updateSpikeTrap();
@@ -857,10 +882,6 @@ window.onload = function() {
                                 player.y = prevY;
                             }
                         });
-                    }
-                    if (player.health <= 0) {
-                        console.log("Game Over!");
-                        isGameRunning = false;
                     }
                 }
 
