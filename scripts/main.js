@@ -12,12 +12,28 @@ window.onload = function() {
         height: 2000
     };
 
+    let playerWidth = 144;
+    let playerHeight = 128;
+    let playerCurrentFrame = 0;
+    let playerFrameCount = 0;
+    const maxPlayerFramesPerDirection = 3;
+
+    const playerSprite = new Image();
+    playerSprite.src = 'assets/images/redDragon.png';
+
+    const playerFrames = {
+        up: [{sx: 0, sy: 0}, {sx: 144, sy: 0}, {sx: 288, sy: 0}],
+        right: [{sx: 0, sy: 128}, {sx: 144, sy: 128}, {sx: 288, sy: 128}],
+        down: [{sx: 0, sy: 256}, {sx: 144, sy: 256}, {sx: 288, sy: 256}],
+        left: [{sx: 0, sy: 384}, {sx: 144, sy: 384}, {sx: 288, sy: 384}],
+    };
+
     const player = {
         x: 100,
         y: 100,
-        width: 48,
-        height: 48,
-        color: '#FF0000',
+        width: playerWidth,
+        height: playerHeight,
+        //color: '#FF0000',
         speed: 2,
         health: 10,
         //direction: 'right'
@@ -27,6 +43,7 @@ window.onload = function() {
         canShoot: true,
         bulletCount: 0,
         maxBullets: 3,
+        direction: 'right',
     };
 
     let moveUp = false;
@@ -37,6 +54,65 @@ window.onload = function() {
     let isInventoryVisible = false;
     let isShieldActive = false;
     const sprintMultiplier = 3;
+
+    function updatePlayerMovement() {
+        const prevX = player.x;
+        const prevY = player.y;
+        
+        let attemptedX = player.x;
+        let attemptedY = player.y;
+
+        if (moveUp) {
+            attemptedY -= isSprinting ? player.speed * sprintMultiplier : player.speed;
+            player.direction = 'up';
+        }
+        if (moveDown) {
+            attemptedY += isSprinting ? player.speed * sprintMultiplier : player.speed;
+            player.direction = 'down';
+        }
+        if (moveLeft) {
+            attemptedX -= isSprinting ? player.speed * sprintMultiplier: player.speed;
+            player.direction = 'left';
+        }
+        if (moveRight) {
+            attemptedX += isSprinting ? player.speed * sprintMultiplier : player.speed;
+            player.direction = 'right';
+        }
+
+        if (attemptedX < 0) attemptedX = 0;
+        if (attemptedX + player.width > map.width) attemptedX = map.width - player.width;
+        if (attemptedY < 0) attemptedY = 0;
+        if (attemptedY + player.height > map.height) attemptedY = map.height - player.height;
+
+        player.x = attemptedX;
+        obstacles.forEach(obstacle => {
+            if (detectCollision(player, obstacle)) {
+                player.x = prevX;
+            }
+        });
+
+        player.y = attemptedY;
+        obstacles.forEach(obstacle => {
+            if (detectCollision(player, obstacle)) {
+                player.y = prevY;
+            }
+        });
+
+        frameCount++;
+        if (frameCount >= 10) {
+            playerCurrentFrame = (playerCurrentFrame + 1) % maxPlayerFramesPerDirection;
+            frameCount = 0;
+        }
+    }
+
+    function drawPlayer() {
+        const frame = playerFrames[player.direction][playerCurrentFrame];
+        ctx.drawImage(
+            playerSprite,
+            frame.sx, frame.sy, playerWidth, playerHeight,
+            player.x - camera.x, player.y - camera.y, player.width, player.height
+        );
+    }
 
     let blueEnemyLastHitTime = 0;
 
@@ -189,6 +265,13 @@ window.onload = function() {
         }
     }
 
+    const fireballSprite = new Image();
+    fireballSprite.src = 'assets/images/fireball.png';
+
+    const fireballWidth = 920 / 6;
+    const fireballHeight = 154;
+    const fireballAnimationSpeed = 5;
+
     const projectiles = [];
 
     function shootProjectile() {
@@ -196,10 +279,12 @@ window.onload = function() {
             const projectile = {
                 x: player.x + player.width / 2,
                 y: player.y + player.height / 2,
-                width: 5,
-                height: 5,
+                width: 15,
+                height: 15,
                 speed: 5,
-                direction: player.direction
+                direction: player.direction,
+                frame: 0,
+                frameCount: 0
             };
             
             projectiles.push(projectile);
@@ -219,7 +304,30 @@ window.onload = function() {
         } else if (projectile.direction === 'down') {
             projectile.y += projectile.speed;
         }
+
+        projectile.frameCount++;
+        if (projectile.frameCount >= fireballAnimationSpeed) {
+            projectile.frame = (projectile.frame + 1) % 6;
+            projectile.frameCount = 0;
+        }
     }
+
+    function drawProjectiles() {
+        projectiles.forEach((projectile, index) => {
+            ctx.drawImage(
+                fireballSprite,
+                projectile.frame * fireballWidth, 0, fireballWidth, fireballHeight,
+                projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height
+            );
+
+            if (moveProjectile(projectile)) {
+                projectiles.splice(index, 1);
+            }
+        })
+    }
+
+    const arrowSprite = new Image();
+    arrowSprite.src = 'assets/images/arrow.png';
 
     const enemyProjectiles = [];
 
@@ -230,8 +338,8 @@ window.onload = function() {
         const projectile = {
             x: enemy.x + enemy.width / 2,
             y: enemy.y + enemy.height / 2,
-            width: 5,
-            height: 5,
+            width: 20,
+            height: 10,
             speed: 3,
             direction: direction
         };
@@ -294,6 +402,20 @@ window.onload = function() {
         return false;
     }
 
+    function drawEnemyProjectiles() {
+        enemyProjectiles.forEach((projectile, index) => {
+            const shouldRemove = moveEnemyProjectile(projectile);
+            if (shouldRemove) {
+                enemyProjectiles.splice(index, 1);
+            } else {
+                ctx.drawImage(
+                    arrowSprite,
+                    projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height
+                );
+            }
+        });
+    }
+
     const wallImage = new Image();
     wallImage.src = 'assets/images/wall2.jpg';
 
@@ -322,7 +444,7 @@ window.onload = function() {
         currentFrame: 0,
         frameCount: 0,
         maxFrames: spikeImages.length,
-        animationSpeed: 15
+        animationSpeed: 15,
     };
     
     function drawSpikeTrap() {
@@ -547,6 +669,8 @@ window.onload = function() {
         if (isGameRunning) {
 
             updateCamera();
+            updatePlayerMovement();
+            updateSpikeTrap();
 
             checkDoorCollision();
             drainStaminaForSprint();
@@ -555,39 +679,11 @@ window.onload = function() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             drawWalkway();
-            updateSpikeTrap();
             drawSpikeTrap();
+            drawProjectiles();
+            drawEnemyProjectiles();
 
-            const prevX = player.x;
-            const prevY = player.y;
-            
-            let attemptedX = player.x;
-            let attemptedY = player.y;
-
-            if (moveUp) attemptedY -= isSprinting ? player.speed * sprintMultiplier : player.speed;
-            if (moveDown) attemptedY += isSprinting ? player.speed * sprintMultiplier : player.speed;
-            if (moveLeft) attemptedX -= isSprinting ? player.speed * sprintMultiplier: player.speed;
-            if (moveRight) attemptedX += isSprinting ? player.speed * sprintMultiplier : player.speed;
-
-            if (attemptedX < 0) attemptedX=0;
-            if (attemptedX + player.width > map.width) attemptedX = map.width - player.width;
-            if (attemptedY < 0) attemptedY = 0;
-            if (attemptedY + player.height > map.height) attemptedY = map.height - player.height;
-
-            player.x = attemptedX;
-            obstacles.forEach(obstacle => {
-                if (detectCollision(player, obstacle)) {
-                    player.x = prevX;
-                }
-            });
-
-            player.y = attemptedY;
-            obstacles.forEach(obstacle => {
-                if (detectCollision(player, obstacle)) {
-                    player.y = prevY;
-                }
-            });
-
+            drawPlayer();
             checkItemCollection();
             checkSpikeCollision();
 
@@ -669,8 +765,10 @@ window.onload = function() {
                 if (shouldRemove) {
                     enemyProjectiles.splice(index, 1);
                 } else {
-                    ctx.fillStyle = 'purple';
-                    ctx.fillRect(projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height);
+                    ctx.drawImage(
+                        arrowSprite,
+                        projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height
+                    );
                 }
             });
 
@@ -744,15 +842,14 @@ window.onload = function() {
                     projectiles.splice(index, 1);
                     }
 
-                ctx.fillStyle = 'yellow';
+                ctx.drawImage(
+                    fireballSprite,
+                    projectile.frame * fireballWidth, 0, fireballWidth, fireballHeight,
+                    projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height
+                );
                 ctx.fillRect(projectile.x - camera.x, projectile.y - camera.y, projectile.width, projectile.height);
             });
 
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
-
-            //ctx.fillStyle = door.color;
-            //ctx.fillRect(door.x - camera.x, door.y - camera.y, door.width, door.height);
             ctx.drawImage(
                 doorImage,
                 door.x - camera.x,
