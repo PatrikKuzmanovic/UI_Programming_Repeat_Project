@@ -3,6 +3,7 @@ window.onload = function() {
     const ctx = canvas.getContext("2d");
 
     let isGameRunning = false;
+    let showIntroScreen = true;
     let keyDropMessage = '';
     let messageTimer = 0;
     const MESSAGE_DURATION = 3000;
@@ -33,10 +34,8 @@ window.onload = function() {
         y: 100,
         width: playerWidth,
         height: playerHeight,
-        //color: '#FF0000',
         speed: 2,
         health: 10,
-        //direction: 'right'
         maxHealth: 10,
         stamina: 100,
         maxStamina: 100,
@@ -155,7 +154,18 @@ window.onload = function() {
             width: enemyWidth,
             height: enemyHeight,
             speed: 1.5,
-            //color: 'red',
+            direction: 'right',
+            health: 3,
+            isAI: false,
+            isSoldier: true,
+            patrolDirection: 'horizontal',
+        },
+        {
+            x: 100,
+            y: 600,
+            width: enemyWidth,
+            height: enemyHeight,
+            speed: 1.5,
             direction: 'right',
             health: 3,
             isAI: false,
@@ -370,7 +380,7 @@ window.onload = function() {
 
         if (detectCollision(projectile, player)) {
             if (!isShieldActive) {
-                player.health -= 6;
+                player.health -= 3;
                 console.log("Player hit by enemy projectile, Health: " + player.health);
 
                 if (player.health <= 0) {
@@ -425,7 +435,6 @@ window.onload = function() {
     function drawWalkway() {
         const pattern = ctx.createPattern(walkwayImage, 'repeat');
         ctx.fillStyle = pattern;
-        //ctx.fillRect(0 - camera.x, 0 - camera.y, map.width, map.height);
         ctx.fillRect(0, 0, canvas.width, canvas.height)
     }
 
@@ -473,7 +482,7 @@ window.onload = function() {
 
     const doorImage = new Image();
     doorImage.src = 'assets/images/door.png';
-    const door = {x: 1745, y: 1585, width: 64, height: 96};
+    const door = {x: 1400, y: 1585, width: 64, height: 96};
 
     function activeShield() {
         const shieldIndex = inventory.indexOf('shield(s)');
@@ -550,8 +559,6 @@ window.onload = function() {
         {x: 1200, y: 800, width: 500, height: 50},
         {x: 1600, y: 1600, width: 300, height: 50},
     ];
-
-    //const door = {x: 1780, y: 1780, width: 40, height: 40, color: 'brown'};
 
     function checkDoorCollision() {
         if (detectCollision(player, door)) {
@@ -704,6 +711,33 @@ window.onload = function() {
         }
     }
     
+    function drawIntroScreen() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = 'white';
+        ctx.font = '24px Aria;';
+        ctx.textAlign = 'center';
+
+        const lines = [
+            "Press arrow keys to move",
+            "Shift key to move faster",
+            "Space to shoot",
+            "Tab to open Inventory",
+            "",
+            'If potion is collected press "p" to use it',
+            'If shield is collected press "s" to use it',
+            "",
+            "Watch out for the stamina as you need to use it wisely!",
+            "Defeated enemies drop keys which You need to open a door!",
+            "",
+            "Press Enter to start the game!"
+        ];
+
+        lines.forEach((line, index) => {
+            ctx.fillText(line, canvas.width / 2, 100 + index * 30);
+        });
+    }
+
     function drawHealthBar() {
         const barWidth = 200;
         const barHeight = 20;
@@ -759,13 +793,17 @@ window.onload = function() {
             if (player.stamina >= player.maxStamina) {
                 player.stamina = player.maxStamina;
                 player.canShoot = true;
-                //player.canSprint = true;
             }
         }
     }
 
     function gameLoop() {
         if (isGameRunning) {
+
+            if (showIntroScreen) {
+                drawIntroScreen();
+                return;
+            }
 
             updateCamera();
             updatePlayerMovement();
@@ -871,13 +909,11 @@ window.onload = function() {
                 }
             });
 
-            //ctx.fillStyle = '#654321';
             obstacles.forEach(obstacle => {
                 if (obstacle.x < camera.x + camera.width &&
                     obstacle.x + obstacle.width > camera.x &&
                     obstacle.y < camera.y + camera.height &&
                     obstacle.y + obstacle.height> camera.y){
-                    //ctx.fillRect(obstacle.x - camera.x, obstacle.y - camera.y, obstacle.width, obstacle.height);
                     const pattern = ctx.createPattern(wallImage, 'repeat');
                     ctx.fillStyle = pattern;
                     ctx.fillRect(obstacle.x - camera.x, obstacle.y - camera.y, obstacle.width, obstacle.height);
@@ -1036,7 +1072,16 @@ window.onload = function() {
         }
     });
 
+    window.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && showIntroScreen) {
+            showIntroScreen = false;
+            isGameRunning = true;
+            gameLoop();
+        }
+    });
+
     document.getElementById('startBtn').onclick = function() {
+        showIntroScreen = true;
         isGameRunning = true;
         startEnemyShooting();
         gameLoop();
